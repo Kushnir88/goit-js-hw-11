@@ -1,4 +1,4 @@
-// app.js
+
 const API_KEY = '36866998-5308da28c55e509481910204f';
 const BASE_URL = 'https://pixabay.com/api/';
 const ITEMS_PER_PAGE = 20;
