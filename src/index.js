@@ -45,8 +45,13 @@ async function fetchImages() {
     const data = response.data;
 
     if (data.hits.length === 0) {
-      showErrorMessage('Sorry, there are no images matching your search query. Please try again.');
+      showErrorMessage('На жаль, немає зображень, що відповідають вашому пошуковому запиту. Будь ласка, спробуйте ще раз.');
       return;
+    }
+
+    if (currentPage === 1) {
+      const totalHits = data.totalHits;
+      showInfoMessage(`Hooray! We found ${totalHits} images.`);
     }
 
     data.hits.forEach((image) => {
@@ -56,7 +61,7 @@ async function fetchImages() {
 
     if (data.totalHits <= currentPage * ITEMS_PER_PAGE) {
       loadMoreBtn.style.display = 'none';
-      showInfoMessage("We're sorry, but you've reached the end of search results.");
+      showInfoMessage('На жаль, ви досягли кінця результатів пошуку.');
     } else {
       loadMoreBtn.classList.add('show');
     }
@@ -64,7 +69,7 @@ async function fetchImages() {
     currentPage++;
   } catch (error) {
     console.error(error);
-    showErrorMessage('An error occurred while fetching images. Please try again later.');
+    showErrorMessage('Виникла помилка під час завантаження зображень. Будь ласка, спробуйте ще раз пізніше.');
   }
 }
 
@@ -82,10 +87,10 @@ function createPhotoCard(image) {
   const info = document.createElement('div');
   info.classList.add('info');
 
-  const likesInfo = createInfoItem('Likes', likes);
-  const viewsInfo = createInfoItem('Views', views);
-  const commentsInfo = createInfoItem('Comments', comments);
-  const downloadsInfo = createInfoItem('Downloads', downloads);
+  const likesInfo = createInfoItem('Лайки', likes);
+  const viewsInfo = createInfoItem('Перегляди', views);
+  const commentsInfo = createInfoItem('Коментарі', comments);
+  const downloadsInfo = createInfoItem('Завантаження', downloads);
 
   info.append(likesInfo, viewsInfo, commentsInfo, downloadsInfo);
 
@@ -107,14 +112,30 @@ function createInfoItem(label, value) {
 }
 
 function openImageModal(imageUrl, altText) {
-  // Implement your image modal logic here
-  console.log('Open image modal:', imageUrl, altText);
+  const modal = document.createElement('div');
+  modal.classList.add('modal');
+
+  const modalContent = document.createElement('div');
+  modalContent.classList.add('modal-content');
+
+  const img = document.createElement('img');
+  img.src = imageUrl;
+  img.alt = altText;
+
+  modalContent.appendChild(img);
+  modal.appendChild(modalContent);
+
+  document.body.appendChild(modal);
+
+  modal.addEventListener('click', () => {
+    document.body.removeChild(modal);
+  });
 }
 
 function showErrorMessage(message) {
-  notiflix.Notify.Failure(message);
+  Notiflix.Notify.Failure(message);
 }
 
 function showInfoMessage(message) {
-  notiflix.Notify.Info(message);
+  Notiflix.Notify.Info(message);
 }
