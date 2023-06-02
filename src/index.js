@@ -8,8 +8,8 @@ const gallery = document.querySelector('.gallery');
 let currentPage = 1;
 let currentQuery = '';
 
-let isLoading = false; // Флаг, що показує, чи йде завантаження даних
-let isEndOfResults = false; // Флаг, що показує, чи досягнуто кінця результатів
+let isLoading = false; 
+let isEndOfResults = false; 
 
 searchForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -27,9 +27,9 @@ searchForm.addEventListener('submit', async (e) => {
   await fetchImages();
 });
 
-// Створюємо новий Observer
+
 const observer = new IntersectionObserver(async (entries) => {
-  // Якщо бачимо прогортання до останнього елемента
+  
   if (entries[0].isIntersecting && !isLoading && !isEndOfResults) {
     await fetchImages();
   }
@@ -74,7 +74,7 @@ async function fetchImages() {
       showInfoMessage('На жаль, ви досягли кінця результатів пошуку.');
     } else {
       currentPage++;
-      // Додаємо останній елемент галереї до Observer
+     
       observer.observe(gallery.lastElementChild);
     }
   } catch (error) {
@@ -84,11 +84,6 @@ async function fetchImages() {
 
   isLoading = false;
 }
-
-// // Викликаємо функцію fetchImages при запуску сторінки
-// fetchImages();
-
-
 
 function createPhotoCard(image) {
   const { webformatURL, largeImageURL, tags, likes, views, comments, downloads } = image;
