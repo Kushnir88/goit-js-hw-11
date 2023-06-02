@@ -1,118 +1,120 @@
 const API_KEY = '36866998-5308da28c55e509481910204f';
-import { fetchImages } from './api.js';
+const BASE_URL = 'https://pixabay.com/api/';
+const ITEMS_PER_PAGE = 40;
 
-
-const form = document.getElementById('search-form');
+const searchForm = document.getElementById('search-form');
 const gallery = document.querySelector('.gallery');
 const loadMoreBtn = document.querySelector('.load-more');
 
 let currentPage = 1;
 let currentQuery = '';
 
-form.addEventListener('submit', handleFormSubmit);
-loadMoreBtn.addEventListener('click', fetchImages);
+searchForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const searchQuery = e.target.elements.searchQuery.value.trim();
 
-async function handleFormSubmit(event) {
-  event.preventDefault();
-  currentPage = 1;
-  currentQuery = form.elements.searchQuery.value.trim();
-
-  if (currentQuery === '') {
+  if (searchQuery === '') {
     return;
   }
 
-  clearGallery();
+  currentQuery = searchQuery;
+  currentPage = 1;
+  gallery.innerHTML = '';
+  loadMoreBtn.classList.remove('show');
+
   await fetchImages();
-  showLoadMoreButton();
-}
+});
+
+loadMoreBtn.addEventListener('click', async () => {
+  await fetchImages();
+});
 
 async function fetchImages() {
-  try {
-    const response = await axios.get('https://pixabay.com/api/', {
-      params: {
-        key: API_KEY,
-        q: currentQuery,
-        image_type: 'photo',
-        orientation: 'horizontal',
-        safesearch: true,
-        page: currentPage,
-        per_page: 40,
-      },
-    });
+  const params = new URLSearchParams({
+    key: API_KEY,
+    q: currentQuery,
+    image_type: 'photo',
+    orientation: 'horizontal',
+    safesearch: true,
+    per_page: ITEMS_PER_PAGE,
+    page: currentPage,
+  });
 
+  try {
+    const response = await axios.get(`${BASE_URL}?${params}`);
     const data = response.data;
 
-    if (data.hits.length > 0) {
-      displayImages(data.hits);
-      currentPage++;
-    } else {
-      hideLoadMoreButton();
-      showInfoMessage("Sorry, there are no images matching your search query. Please try again.");
+    if (data.hits.length === 0) {
+      showErrorMessage('Sorry, there are no images matching your search query. Please try again.');
+      return;
     }
+
+    data.hits.forEach((image) => {
+      const photoCard = createPhotoCard(image);
+      gallery.appendChild(photoCard);
+    });
+
+    if (data.totalHits <= currentPage * ITEMS_PER_PAGE) {
+      loadMoreBtn.style.display = 'none';
+      showInfoMessage("We're sorry, but you've reached the end of search results.");
+    } else {
+      loadMoreBtn.classList.add('show');
+    }
+
+    currentPage++;
   } catch (error) {
     console.error(error);
     showErrorMessage('An error occurred while fetching images. Please try again later.');
   }
 }
 
-function displayImages(images) {
-  const fragment = document.createDocumentFragment();
+function createPhotoCard(image) {
+  const { webformatURL, largeImageURL, tags, likes, views, comments, downloads } = image;
 
-  images.forEach((image) => {
-    const card = createImageCard(image);
-    fragment.appendChild(card);
-  });
+  const photoCard = document.createElement('div');
+  photoCard.classList.add('photo-card');
 
-  gallery.appendChild(fragment);
-}
-
-function createImageCard(image) {
-  const card = document.createElement('div');
-  card.classList.add('photo-card');
-
-  const imageElement = document.createElement('img');
-  imageElement.src = image.webformatURL;
-  imageElement.alt = image.tags;
-  imageElement.loading = 'lazy';
+  const img = document.createElement('img');
+  img.src = webformatURL;
+  img.alt = tags;
+  img.loading = 'lazy';
 
   const info = document.createElement('div');
   info.classList.add('info');
 
-  const likes = createInfoItem('Likes', image.likes);
-  const views = createInfoItem('Views', image.views);
-  const comments = createInfoItem('Comments', image.comments);
-  const downloads = createInfoItem('Downloads', image.downloads);
+  const likesInfo = createInfoItem('Likes', likes);
+  const viewsInfo = createInfoItem('Views', views);
+  const commentsInfo = createInfoItem('Comments', comments);
+  const downloadsInfo = createInfoItem('Downloads', downloads);
 
-  info.append(likes, views, comments, downloads);
-  card.append(imageElement, info);
+  info.append(likesInfo, viewsInfo, commentsInfo, downloadsInfo);
 
-  return card;
+  photoCard.append(img, info);
+
+  img.addEventListener('click', () => {
+    openImageModal(largeImageURL, tags);
+  });
+
+  return photoCard;
 }
 
 function createInfoItem(label, value) {
-  const item = document.createElement('p');
-  item.classList.add('info-item');
-  item.innerHTML = `<b>${label}:</b> ${value}`;
-  return item;
+  const infoItem = document.createElement('p');
+  infoItem.classList.add('info-item');
+  infoItem.innerHTML = `<b>${label}: </b>${value}`;
+
+  return infoItem;
 }
 
-function clearGallery() {
-  gallery.innerHTML = '';
-}
-
-function showLoadMoreButton() {
-  loadMoreBtn.style.display = 'block';
-}
-
-function hideLoadMoreButton() {
-  loadMoreBtn.style.display = 'none';
+function openImageModal(imageUrl, altText) {
+  // Implement your image modal logic here
+  console.log('Open image modal:', imageUrl, altText);
 }
 
 function showErrorMessage(message) {
-  notiflix.Notify.failure(message);
+  notiflix.Notify.Failure(message);
 }
 
 function showInfoMessage(message) {
-  notiflix.Notify.info(message);
+  notiflix.Notify.Info(message);
 }
-// Працюватиме ??
