@@ -4,10 +4,12 @@ const ITEMS_PER_PAGE = 40;
 
 const searchForm = document.getElementById('search-form');
 const gallery = document.querySelector('.gallery');
-const loadMoreBtn = document.querySelector('.load-more');
 
 let currentPage = 1;
 let currentQuery = '';
+
+let isLoading = false; // Флаг, що показує, чи йде завантаження даних
+let isEndOfResults = false; // Флаг, що показує, чи досягнуто кінця результатів
 
 searchForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -20,16 +22,22 @@ searchForm.addEventListener('submit', async (e) => {
   currentQuery = searchQuery;
   currentPage = 1;
   gallery.innerHTML = '';
-  loadMoreBtn.classList.remove('show');
+  gallery.classList.add('empty');
 
   await fetchImages();
 });
 
-loadMoreBtn.addEventListener('click', async () => {
-  await fetchImages();
+// Створюємо новий Observer
+const observer = new IntersectionObserver(async (entries) => {
+  // Якщо бачимо прогортання до останнього елемента
+  if (entries[0].isIntersecting && !isLoading && !isEndOfResults) {
+    await fetchImages();
+  }
 });
 
 async function fetchImages() {
+  isLoading = true;
+
   const params = new URLSearchParams({
     key: API_KEY,
     q: currentQuery,
@@ -46,6 +54,8 @@ async function fetchImages() {
 
     if (data.hits.length === 0) {
       showErrorMessage('На жаль, немає зображень, що відповідають вашому пошуковому запиту. Будь ласка, спробуйте ще раз.');
+      isEndOfResults = true;
+      gallery.classList.remove('empty');
       return;
     }
 
@@ -60,18 +70,25 @@ async function fetchImages() {
     });
 
     if (data.totalHits <= currentPage * ITEMS_PER_PAGE) {
-      loadMoreBtn.style.display = 'none';
+      isEndOfResults = true;
       showInfoMessage('На жаль, ви досягли кінця результатів пошуку.');
     } else {
-      loadMoreBtn.classList.add('show');
+      currentPage++;
+      // Додаємо останній елемент галереї до Observer
+      observer.observe(gallery.lastElementChild);
     }
-
-    currentPage++;
   } catch (error) {
     console.error(error);
-    showErrorMessage('Виникла помилка під час завантаження зображень. Будь ласка, спробуйте ще раз пізніше.');
+    showErrorMessage('Сталася помилка під час отримання зображень. Будь ласка, спробуйте ще раз пізніше.');
   }
+
+  isLoading = false;
 }
+
+// // Викликаємо функцію fetchImages при запуску сторінки
+// fetchImages();
+
+
 
 function createPhotoCard(image) {
   const { webformatURL, largeImageURL, tags, likes, views, comments, downloads } = image;
@@ -87,10 +104,10 @@ function createPhotoCard(image) {
   const info = document.createElement('div');
   info.classList.add('info');
 
-  const likesInfo = createInfoItem('Лайки', likes);
-  const viewsInfo = createInfoItem('Перегляди', views);
-  const commentsInfo = createInfoItem('Коментарі', comments);
-  const downloadsInfo = createInfoItem('Завантаження', downloads);
+  const likesInfo = createInfoItem('Likes', likes);
+  const viewsInfo = createInfoItem('Views', views);
+  const commentsInfo = createInfoItem('Comments', comments);
+  const downloadsInfo = createInfoItem('Downloads', downloads);
 
   info.append(likesInfo, viewsInfo, commentsInfo, downloadsInfo);
 

@@ -57,10 +57,12 @@
   object-fit: cover;
   border-radius: 4px;
   margin-bottom: 10px;
+  
 }
 
 .info-item {
-  margin: 5px 0;
+  display: flex;
+  margin-top: 5px;
 }
 
 .load-more {
