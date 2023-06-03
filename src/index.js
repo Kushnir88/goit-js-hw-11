@@ -1,3 +1,6 @@
+import SimpleLightbox from "simplelightbox";
+import "simplelightbox/dist/simple-lightbox.min.css";
+
 const API_KEY = '36866998-5308da28c55e509481910204f';
 const BASE_URL = 'https://pixabay.com/api/';
 const ITEMS_PER_PAGE = 40;
@@ -8,8 +11,8 @@ const gallery = document.querySelector('.gallery');
 let currentPage = 1;
 let currentQuery = '';
 
-let isLoading = false; 
-let isEndOfResults = false; 
+let isLoading = false;
+let isEndOfResults = false;
 
 searchForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -27,9 +30,7 @@ searchForm.addEventListener('submit', async (e) => {
   await fetchImages();
 });
 
-
 const observer = new IntersectionObserver(async (entries) => {
-  
   if (entries[0].isIntersecting && !isLoading && !isEndOfResults) {
     await fetchImages();
   }
@@ -71,12 +72,14 @@ async function fetchImages() {
 
     if (data.totalHits <= currentPage * ITEMS_PER_PAGE) {
       isEndOfResults = true;
-      showInfoMessage('На жаль, ви досягли кінця результатів пошуку.');
+      showInfoMessage("We're sorry, but you've reached the end of search results.");
     } else {
       currentPage++;
-     
       observer.observe(gallery.lastElementChild);
     }
+
+    const lightbox = new SimpleLightbox('.gallery a');
+    lightbox.refresh();
   } catch (error) {
     console.error(error);
     showErrorMessage('Сталася помилка під час отримання зображень. Будь ласка, спробуйте ще раз пізніше.');
@@ -90,6 +93,9 @@ function createPhotoCard(image) {
 
   const photoCard = document.createElement('div');
   photoCard.classList.add('photo-card');
+
+  const link = document.createElement('a');
+  link.href = largeImageURL;
 
   const img = document.createElement('img');
   img.src = webformatURL;
@@ -106,7 +112,8 @@ function createPhotoCard(image) {
 
   info.append(likesInfo, viewsInfo, commentsInfo, downloadsInfo);
 
-  photoCard.append(img, info);
+  link.append(img, info);
+  photoCard.appendChild(link);
 
   img.addEventListener('click', () => {
     openImageModal(largeImageURL, tags);
