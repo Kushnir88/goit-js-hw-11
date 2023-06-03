@@ -59,8 +59,14 @@
 
 }
 
-.info-item {
+/* .info-item {
   display: flex;
+  margin-top: 5px;
+} */
+
+.info {
+  display: flex;
+  justify-content: space-between;
   margin-top: 5px;
 }
 
