@@ -84,3 +84,6 @@
 .load-more.show {
   display: block;
 }
+.modal {
+  position: fixed;
+}
