@@ -1,7 +1,5 @@
 import SimpleLightbox from "simplelightbox";
 import "simplelightbox/dist/simple-lightbox.min.css";
-import axios from "axios";
-import Notiflix from "notiflix";
 
 const API_KEY = '36866998-5308da28c55e509481910204f';
 const BASE_URL = 'https://pixabay.com/api/';
@@ -9,7 +7,6 @@ const ITEMS_PER_PAGE = 40;
 
 const searchForm = document.getElementById('search-form');
 const gallery = document.querySelector('.gallery');
-const searchInput = document.getElementById('search-input');
 
 let currentPage = 1;
 let currentQuery = '';
@@ -34,9 +31,6 @@ searchForm.addEventListener('submit', async (e) => {
   await fetchImages();
 });
 
-searchInput.addEventListener('input', () => {
-  searchInput.classList.remove('empty');
-});
 
 const observer = new IntersectionObserver(async (entries) => {
   if (entries[0].isIntersecting && !isLoading && !isEndOfResults) {
@@ -86,11 +80,7 @@ async function fetchImages() {
       observer.observe(gallery.lastElementChild);
     }
 
-    const lightbox = new SimpleLightbox('.gallery a', {
-      disableScroll: false,
-      captionSelector: 'self',
-      captionsData: 'alt',
-    });
+    const lightbox = new SimpleLightbox('.gallery a');
     lightbox.refresh();
   } catch (error) {
     console.error(error);
