@@ -1,162 +1,87 @@
-import SimpleLightbox from "simplelightbox";
-import "simplelightbox/dist/simple-lightbox.min.css";
+// script.js
 
-const API_KEY = '36866998-5308da28c55e509481910204f';
-const BASE_URL = 'https://pixabay.com/api/';
-const ITEMS_PER_PAGE = 40;
+import Notiflix from 'notiflix';
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
+import { searchImages } from './api.js';
 
-const searchForm = document.getElementById('search-form');
+const form = document.getElementById('search-form');
 const gallery = document.querySelector('.gallery');
+const loadMoreBtn = document.querySelector('.load-more');
 
 let currentPage = 1;
 let currentQuery = '';
 
-let isLoading = false;
-let isEndOfResults = false;
-
-searchForm.addEventListener('submit', async (e) => {
+form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const searchQuery = e.target.elements.searchQuery.value.trim();
+  currentPage = 1;
+  currentQuery = e.target.searchQuery.value.trim();
 
-  if (searchQuery === '') {
-    showErrorMessage('Будь ласка, введіть пошуковий запит.');
+  if (currentQuery === '') {
     return;
   }
 
-  currentQuery = searchQuery;
-  currentPage = 1;
+  if (currentQuery.includes(' ')) {
+    Notiflix.Notify.failure("Please remove spaces from your search query.");
+    return;
+  }
+
   gallery.innerHTML = '';
-  gallery.classList.add('empty');
+  loadMoreBtn.style.display = 'none';
 
-  await fetchImages();
-});
+  const { images, totalHits } = await searchImages(currentQuery, currentPage);
 
-
-const observer = new IntersectionObserver(async (entries) => {
-  if (entries[0].isIntersecting && !isLoading && !isEndOfResults) {
-    await fetchImages();
-  }
-});
-
-async function fetchImages() {
-  isLoading = true;
-
-  const params = new URLSearchParams({
-    key: API_KEY,
-    q: currentQuery,
-    image_type: 'photo',
-    orientation: 'horizontal',
-    safesearch: true,
-    per_page: ITEMS_PER_PAGE,
-    page: currentPage,
-  });
-
-  try {
-    const response = await axios.get(`${BASE_URL}?${params}`);
-    const data = response.data;
-
-    if (data.hits.length === 0) {
-      showErrorMessage('На жаль, немає зображень, що відповідають вашому пошуковому запиту. Будь ласка, спробуйте ще раз.');
-      isEndOfResults = true;
-      gallery.classList.remove('empty');
-      return;
-    }
-
-    if (currentPage === 1) {
-      const totalHits = data.totalHits;
-      showInfoMessage(`Hooray! We found ${totalHits} images.`);
-    }
-
-    data.hits.forEach((image) => {
-      const photoCard = createPhotoCard(image);
-      gallery.appendChild(photoCard);
-    });
-
-    if (data.totalHits <= currentPage * ITEMS_PER_PAGE) {
-      isEndOfResults = true;
-      showInfoMessage("We're sorry, but you've reached the end of search results.");
+  if (images) {
+    renderImages(images);
+    if (totalHits > currentPage * 40) {
+      loadMoreBtn.style.display = 'block';
     } else {
-      currentPage++;
-      observer.observe(gallery.lastElementChild);
+      Notiflix.Notify.info("We're sorry, but you've reached the end of search results.");
     }
+    Notiflix.Notify.success(`Hooray! We found ${totalHits} images.`);
 
-    const lightbox = new SimpleLightbox('.gallery a');
-    lightbox.refresh();
-  } catch (error) {
-    console.error(error);
-    showErrorMessage('Сталася помилка під час отримання зображень. Будь ласка, спробуйте ще раз пізніше.');
+    initializeLightbox();
   }
+});
 
-  isLoading = false;
-}
+loadMoreBtn.addEventListener('click', async () => {
+  currentPage++;
+  const { images, totalHits } = await searchImages(currentQuery, currentPage);
 
-function createPhotoCard(image) {
-  const { webformatURL, largeImageURL, tags, likes, views, comments, downloads } = image;
+  if (images) {
+    renderImages(images);
+    if (totalHits <= currentPage * 40) {
+      loadMoreBtn.style.display = 'none';
+      Notiflix.Notify.info("We're sorry, but you've reached the end of search results.");
+    }
+    Notiflix.Notify.success(`Hooray! We found ${totalHits} images.`);
 
-  const photoCard = document.createElement('div');
-  photoCard.classList.add('photo-card');
+    initializeLightbox();
+  }
+});
 
-  const link = document.createElement('a');
-  link.href = largeImageURL;
-
-  const img = document.createElement('img');
-  img.src = webformatURL;
-  img.alt = tags;
-  img.loading = 'lazy';
-
-  const info = document.createElement('div');
-  info.classList.add('info');
-
-  const likesInfo = createInfoItem('Likes', likes);
-  const viewsInfo = createInfoItem('Views', views);
-  const commentsInfo = createInfoItem('Comments', comments);
-  const downloadsInfo = createInfoItem('Downloads', downloads);
-
-  info.append(likesInfo, viewsInfo, commentsInfo, downloadsInfo);
-
-  link.append(img, info);
-  photoCard.appendChild(link);
-
-  img.addEventListener('click', () => {
-    openImageModal(largeImageURL, tags);
+function renderImages(images) {
+  const cardsHTML = images.map((image) => {
+    return `
+      <a href="${image.largeImageURL}" class="photo-card">
+        <img src="${image.webformatURL}" alt="${image.tags}" loading="lazy" />
+        <div class="info">
+          <p class="info-item"><b>Likes:</b> ${image.likes}</p>
+          <p class="info-item"><b>Views:</b> ${image.views}</p>
+          <p class="info-item"><b>Comments:</b> ${image.comments}</p>
+          <p class="info-item"><b>Downloads:</b> ${image.downloads}</p>
+        </div>
+      </a>
+    `;
   });
 
-  return photoCard;
+  gallery.insertAdjacentHTML('beforeend', cardsHTML.join(''));
 }
 
-function createInfoItem(label, value) {
-  const infoItem = document.createElement('p');
-  infoItem.classList.add('info-item');
-  infoItem.innerHTML = `<b>${label}: </b>${value}`;
-
-  return infoItem;
-}
-
-function openImageModal(imageUrl, altText) {
-  const modal = document.createElement('div');
-  modal.classList.add('modal');
-
-  const modalContent = document.createElement('div');
-  modalContent.classList.add('modal-content');
-
-  const img = document.createElement('img');
-  img.src = imageUrl;
-  img.alt = altText;
-
-  modalContent.appendChild(img);
-  modal.appendChild(modalContent);
-
-  document.body.appendChild(modal);
-
-  modal.addEventListener('click', () => {
-    document.body.removeChild(modal);
+function initializeLightbox() {
+  const lightbox = new SimpleLightbox('.gallery a', {
+    captionsData: 'alt',
+    captionDelay: 250,
   });
-}
-
-function showErrorMessage(message) {
-  Notiflix.Notify.Failure(message);
-}
-
-function showInfoMessage(message) {
-  Notiflix.Notify.Info(message);
+  lightbox.refresh();
 }
