@@ -47,6 +47,15 @@ function showImages(images) {
 
   gallery.appendChild(fragment);
   refreshLightbox();
+  
+  const { height: cardHeight } = document
+    .querySelector('.gallery')
+    .firstElementChild.getBoundingClientRect();
+
+  window.scrollBy({
+    top: cardHeight * 2,
+    behavior: 'smooth',
+  });
 }
 
 function clearGallery() {
