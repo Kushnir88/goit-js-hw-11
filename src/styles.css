@@ -80,6 +80,7 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
+  /* margin-left: 800px; */
 }
 
 .load-more.show {
