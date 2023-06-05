@@ -5,6 +5,7 @@ import 'simplelightbox/dist/simple-lightbox.min.css';
 
 const searchForm = document.getElementById('search-form');
 const gallery = document.querySelector('.gallery');
+const loadMoreButton = document.querySelector('.load-more');
 let currentPage = 1;
 let currentQuery = '';
 let lightbox;
@@ -28,8 +29,24 @@ searchForm.addEventListener('submit', async (event) => {
         showNoResultsMessage();
       } else {
         showImages(data.hits);
+        showLoadMoreButton(data.totalHits);
         showTotalHitsMessage(data.totalHits);
-        observeScroll();
+      }
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+    });
+});
+
+loadMoreButton.addEventListener('click', () => {
+  currentPage++;
+  searchImages(currentQuery, currentPage)
+    .then((data) => {
+      if (data.hits.length > 0) {
+        showImages(data.hits);
+        showLoadMoreButton(data.totalHits);
+      } else {
+        showEndOfResultsMessage();
       }
     })
     .catch((error) => {
@@ -47,15 +64,6 @@ function showImages(images) {
 
   gallery.appendChild(fragment);
   refreshLightbox();
-  
-  const { height: cardHeight } = document
-    .querySelector('.gallery')
-    .firstElementChild.getBoundingClientRect();
-
-  window.scrollBy({
-    top: cardHeight * 2,
-    behavior: 'smooth',
-  });
 }
 
 function clearGallery() {
@@ -96,6 +104,24 @@ function createInfoItem(label, value) {
 function showNoResultsMessage() {
   clearGallery();
   notiflix.Notify.failure('Sorry, there are no images matching your search query. Please try again.');
+  hideLoadMoreButton();
+}
+
+function showEndOfResultsMessage() {
+  hideLoadMoreButton();
+  notiflix.Notify.info("We're sorry, but you've reached the end of search results.");
+}
+
+function showLoadMoreButton(totalHits) {
+  if (gallery.childElementCount < totalHits) {
+    loadMoreButton.style.display = 'block';
+  } else {
+    hideLoadMoreButton();
+  }
+}
+
+function hideLoadMoreButton() {
+  loadMoreButton.style.display = 'none';
 }
 
 function showTotalHitsMessage(totalHits) {
@@ -109,40 +135,3 @@ function refreshLightbox() {
     lightbox = new SimpleLightbox('.gallery a');
   }
 }
-
-function observeScroll() {
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        loadMoreImages();
-      }
-    });
-  });
-
-  const sentinel = document.createElement('div');
-  sentinel.classList.add('sentinel');
-  document.body.appendChild(sentinel);
-
-  observer.observe(sentinel);
-}
-
-async function loadMoreImages() {
-  currentPage++;
-  const data = await searchImages(currentQuery, currentPage);
-
-  if (data.hits.length === 0) {
-    hideSentinel();
-    return;
-  }
-
-  showImages(data.hits);
-}
-
-function hideSentinel() {
-  const sentinel = document.querySelector('.sentinel');
-  if (sentinel) {
-    sentinel.style.display = 'none';
-  }
-}
-
-hideSentinel();
